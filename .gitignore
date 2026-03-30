@@ -1,0 +1,35 @@
+# Virtual environment
+venv/
+.venv/
+
+# Raw data (too large for version control — download from Figshare)
+exploring_data/
+
+# Generated data outputs (reproduced by running the notebook)
+data/raw/
+data/interim/
+data/processed/
+
+# IDE and tool configuration
+.windsurf/
+.vscode/
+.idea/
+__pycache__/
+*.pyc
+
+# Internal planning and build files (not part of the submission)
+build_notebook.py
+column_names.txt
+filter.ipynb
+plan.md
+plan_part2.md
+scripts/fix_dead_code.py
+scripts/fix_sampling.py
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
