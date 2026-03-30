@@ -145,7 +145,8 @@ These columns exist in the feature matrices used for classification. Four config
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `log_initial_cost` | float | Natural log of initial_cost (via `np.log1p`). Log-transformed to reduce skewness from extreme contract values. |
+| `log_base_value` | float | Signed log transform of base_value: `sign(x) * log1p(abs(x))`. Handles negative dollar values safely while reducing skewness. |
+| `log_final_value` | float | Signed log transform of final_value: `sign(x) * log1p(abs(x))`. Same safe transform as log_base_value. |
 | `num_modifications` | int | Carried through from processed dataset. |
 | `num_offers_imputed` | float | Number of offers received, with nulls imputed to the median value. |
 | `contract_type_*` | int (0/1) | One-hot encoded columns from `pd.get_dummies` on contract_type. |
