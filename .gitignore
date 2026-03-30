@@ -23,8 +23,7 @@ column_names.txt
 filter.ipynb
 plan.md
 plan_part2.md
-scripts/fix_dead_code.py
-scripts/fix_sampling.py
+scripts/
 
 # OS files
 .DS_Store
