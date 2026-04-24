@@ -32,3 +32,17 @@ desktop.ini
 
 # Jupyter checkpoints
 .ipynb_checkpoints/
+
+# Environment variables (API keys)
+.env
+service-account.json
+
+# Large model files
+models/
+*.pkl
+
+# Large figures (generated on run)
+figures/*.png
+
+# GAO raw PDFs (can be re-downloaded)
+data/raw/gao_reports/

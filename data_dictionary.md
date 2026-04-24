@@ -67,7 +67,45 @@ These are the columns as they appear in the Figshare Parquet shards (confirmed v
 
 ---
 
-## 2. Processed Dataset Columns (labeled_contracts.parquet)
+## 2. USAspending CSV Columns (Current Data Source)
+
+These columns come from USAspending.gov Custom Award Data download (transaction-level CSV format). The pipeline maps these human-readable column names to the semantic names used throughout the code.
+
+### Column Mapping
+
+| Semantic Name | USAspending CSV Column | Description |
+|---------------|----------------------|-------------|
+| `piid` | `award_id_piid` | Procurement Instrument Identifier |
+| `mod_number` | `modification_number` | Modification number within contract |
+| `description` | `transaction_description` | Contract description text (may also be `prime_award_base_transaction_description`) |
+| `psc` | `product_or_service_code` | Product Service Code for filtering physical deliverables |
+| `naics` | `naics_code` | North American Industry Classification System code |
+| `base_all_options` | `potential_total_value_of_award` | Ceiling value (potential) - used as "initial cost" |
+| `base_exercised` | `current_total_value_of_award` | Current committed value - used as "final cost" |
+| `obligated_amount` | `federal_action_obligation` | Dollar amount obligated by this action |
+| `current_completion` | `period_of_performance_current_end_date` | Current expected completion date |
+| `ultimate_completion` | `period_of_performance_potential_end_date` | Ultimate completion date with all options |
+| `effective_date` | `period_of_performance_start_date` | Contract/modification effective date |
+| `signed_date` | `action_date` | Date contract action was signed |
+| `contract_type` | `type_of_contract_pricing` | Contract pricing type (e.g., Fixed Price, Cost Plus) |
+| `extent_competed` | `extent_competed` | Competition extent code |
+| `num_offers` | `number_of_offers_received` | Number of bids/offers received |
+| `agency_id` | `awarding_agency_code` | Agency awarding the contract |
+| `vendor_name` | `recipient_name` | Contractor/vendor name |
+| `state_code` | `place_of_performance_state` | State where work is performed |
+| `mod_reason` | `action_type` | Modification reason code |
+
+### Pre-filtering on USAspending
+
+When downloading from USAspending.gov, apply these filters for consistency:
+
+- **Contract value:** ≥ $500,000 (MIN_CONTRACT_VALUE)
+- **PSC codes:** Y-series (construction), Z-series (maintenance), or numeric 10-99 (supplies/equipment)
+- **Award type:** Contracts (not grants, loans, etc.)
+
+---
+
+## 3. Processed Dataset Columns (labeled_contracts.parquet)
 
 These are the columns in the final labeled dataset produced by the filtering and label construction pipeline. Each row represents one completed contract.
 
@@ -157,21 +195,43 @@ These columns exist in the feature matrices used for classification. Four config
 
 ## 4. GAO Validation Dataset Columns (gao_validation_set.csv)
 
-These columns are extracted from GAO Weapon Systems Annual Assessment PDFs via Gemini batch processing.
+These columns are extracted from GAO Weapon Systems Annual Assessment PDFs via Claude batch processing.
+
+**Note:** Real data extracted via Claude Haiku 3.5 (claude-3-5-haiku-20241022) with native PDF support. 483 unique programs from 23 chunks across 7 GAO reports (2018-2025). Overlapping chunk results merged with non-null preference.
 
 | Column | Type | Description |
 |--------|------|-------------|
 | `program_name` | string | Name of the Major Defense Acquisition Program as it appears in the GAO report. Examples: "F-35 Lightning II," "DDG 51 Destroyer," "CH-53K King Stallion." |
-| `report_year` | int | Year of the GAO report this data was extracted from (2003-2025). |
+| `report_year` | int | Year of the GAO report this data was extracted from (2003-2025). Current data covers 2018-2025. |
 | `service_branch` | string | Military service managing the program: Army, Navy, Air Force, Marine Corps, DoD-wide, or Space Force. |
 | `baseline_cost_millions` | float or null | Total acquisition cost at the original program baseline, in millions of dollars. |
 | `current_cost_millions` | float or null | Total acquisition cost at the current estimate as of the report year, in millions of dollars. |
-| `cost_growth_percent` | float or null | Percentage change from baseline to current cost. Comparable to cost_growth_pct in the FPDS dataset but measured at the program level rather than contract level. |
-| `original_ioc_date` | string (YYYY-MM) or null | Originally planned date for Initial Operational Capability. |
+| `cost_growth_percent` | float or null | Percentage increase from baseline to current cost. Positive = overrun, negative = underrun. |
+| `original_ioc_date` | string (YYYY-MM) or null | Original planned Initial Operational Capability date at program start. |
 | `current_ioc_date` | string (YYYY-MM) or null | Current estimated IOC date as of the report year. |
 | `schedule_delay_months` | int or null | Difference in months between current and original IOC dates. Comparable to delay_days in the FPDS dataset but measured in months at the program level. |
 | `nunn_mccurdy_breach` | boolean | Whether the program triggered a Nunn-McCurdy unit cost breach (statutory threshold: 15%/25%/30%/50% growth). A strong signal of severe cost problems. |
 | `primary_challenge` | string | One-sentence summary of the main challenge or risk factor described in the GAO narrative for this program. Extracted for potential supplementary NLP analysis. |
+| `source_file` | string | Source JSON file that generated this record (format: gao_YYYY_chunk_N.json). |
+
+----
+
+## 5. GAO-FPDS Linked Dataset Columns (gao_fpds_linked.csv)
+
+Links GAO weapon system programs to FPDS contracts for cross-validation. Generated by `scripts/link_gao_to_fpds_v2.py` using strict tokenization (parenthetical acronyms and model numbers with digits).
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `gao_program_name` | string | Name of the GAO weapon system program (matches program_name in gao_validation_set.csv). |
+| `gao_report_year` | int | Year of the GAO report. |
+| `gao_cost_growth` | float | Cost growth percentage from GAO data. Used for validation against FPDS over_budget label. |
+| `gao_schedule_delay` | int | Schedule delay in months from GAO data. Used for validation against FPDS late label. |
+| `gao_nunn_mccurdy` | boolean | Whether program had Nunn-McCurdy breach. |
+| `fpds_piid` | string | Contract ID from FPDS (matches piid in labeled_contracts.parquet). |
+| `fpds_description` | string | Contract description from FPDS. |
+| `fpds_vendor` | string | Vendor/contractor name from FPDS. |
+| `match_score` | int | Match quality indicator. Strict token matches = 100. Lower scores indicate substring fallbacks. |
+| `match_type` | string | Type of match: 'token_match' (strict token), 'substring_match' (fallback), or 'no_match'. |
 
 ---
 

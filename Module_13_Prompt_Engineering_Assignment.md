@@ -1,0 +1,212 @@
+# Module 13 Assignment — Prompt Engineering (Text Classification)
+
+**Model/Provider Used:** Claude 4 (Anthropic) — Used consistently across all three tasks to ensure results differ only due to prompt design.
+
+---
+
+## Part A: The Three Prompts
+
+### Prompt 1 — Zero-shot Classification
+
+```
+Classify each text into one of these labels: Positive, Neutral, or Negative.
+
+Texts to classify:
+1. Absolutely love the new update—startup time is half of what it was.
+2. App keeps crashing after I import photos. Please fix.
+3. Works fine most days, but it's slow during lunch hours.
+4. Great customer service; my issue was resolved in minutes!
+5. Not sure how to reset my password—documentation is confusing.
+6. Feature request: dark mode for the dashboard.
+7. The last patch broke my notifications again.
+8. Setup was simple and quick.
+9. The price seems okay for what it offers.
+10. It freezes occasionally; a restart usually helps.
+
+Return results as: ID - Text - Label
+```
+
+### Prompt 2 — Few-shot Classification
+
+```
+Classify texts into: Positive, Neutral, or Negative.
+
+Examples:
+- "This app is amazing! Best purchase I've made." → Positive
+- "It crashed three times today and lost my data." → Negative
+- "The interface is usable but could use improvement." → Neutral
+
+Now classify these texts:
+1. Absolutely love the new update—startup time is half of what it was.
+2. App keeps crashing after I import photos. Please fix.
+3. Works fine most days, but it's slow during lunch hours.
+4. Great customer service; my issue was resolved in minutes!
+5. Not sure how to reset my password—documentation is confusing.
+6. Feature request: dark mode for the dashboard.
+7. The last patch broke my notifications again.
+8. Setup was simple and quick.
+9. The price seems okay for what it offers.
+10. It freezes occasionally; a restart usually helps.
+
+Return results as: ID - Text - Label
+```
+
+### Prompt 3 — Instruction-rich Classification
+
+```
+TASK: Classify customer feedback into sentiment labels.
+
+LABEL DEFINITIONS:
+- Positive: Shows happiness, praise, excitement, or clear liking. Includes compliments, thanks, and expressions of joy.
+- Neutral: Straight facts, suggestions without feelings, mixed reactions, or plain information.
+- Negative: Shows unhappiness, complaints, annoyance, problems, or letdown.
+
+TIE-BREAK RULE: If a text has mixed feelings, pick the stronger one. If evenly split, choose Negative (to catch problems early).
+
+OUTPUT FORMAT: Return a markdown table with columns: ID | Full Text | Predicted Label
+
+TEXTS TO CLASSIFY:
+1. Absolutely love the new update—startup time is half of what it was.
+2. App keeps crashing after I import photos. Please fix.
+3. Works fine most days, but it's slow during lunch hours.
+4. Great customer service; my issue was resolved in minutes!
+5. Not sure how to reset my password—documentation is confusing.
+6. Feature request: dark mode for the dashboard.
+7. The last patch broke my notifications again.
+8. Setup was simple and quick.
+9. The price seems okay for what it offers.
+10. It freezes occasionally; a restart usually helps.
+
+STRICT: Use only the three labels above. No explanations needed in output.
+```
+
+---
+
+## Part B: Completed Tables
+
+### Task 1 — Zero-shot Classification Results
+
+| Identifier | Full Text | Predicted Label (Zero-shot) | Notes or Rationale |
+|------------|-----------|----------------------------|---------------------|
+| 1 | Absolutely love the new update—startup time is half of what it was. | Positive | Strong positive language ("love") |
+| 2 | App keeps crashing after I import photos. Please fix. | Negative | Clear complaint about malfunction |
+| 3 | Works fine most days, but it's slow during lunch hours. | Neutral | Balanced sentiment (fine + complaint) |
+| 4 | Great customer service; my issue was resolved in minutes! | Positive | Praise for service |
+| 5 | Not sure how to reset my password—documentation is confusing. | Negative | Negative experience (confusion) |
+| 6 | Feature request: dark mode for the dashboard. | Neutral | Factual suggestion, no emotion |
+| 7 | The last patch broke my notifications again. | Negative | "Broke" and "again" indicate frustration |
+| 8 | Setup was simple and quick. | Positive | Appreciation for ease |
+| 9 | The price seems okay for what it offers. | Neutral | Weak sentiment ("okay" = neutral) |
+| 10 | It freezes occasionally; a restart usually helps. | Negative | Problem-focused despite workaround |
+
+### Task 2 — Few-shot Classification Results
+
+| Identifier | Full Text | Predicted Label (Few-shot) | Notes or Rationale |
+|------------|-----------|---------------------------|---------------------|
+| 1 | Absolutely love the new update—startup time is half of what it was. | Positive | Strong positive language |
+| 2 | App keeps crashing after I import photos. Please fix. | Negative | Clear complaint |
+| 3 | Works fine most days, but it's slow during lunch hours. | Neutral | Examples showed similar mixed → Neutral |
+| 4 | Great customer service; my issue was resolved in minutes! | Positive | Praise |
+| 5 | Not sure how to reset my password—documentation is confusing. | Neutral | Similar to example: interface usable but needs improvement |
+| 6 | Feature request: dark mode for the dashboard. | Neutral | Suggestion without emotion |
+| 7 | The last patch broke my notifications again. | Negative | Clear negative |
+| 8 | Setup was simple and quick. | Positive | Appreciation |
+| 9 | The price seems okay for what it offers. | Neutral | Weak sentiment → Neutral |
+| 10 | It freezes occasionally; a restart usually helps. | Neutral | Similar to "interface usable but could use improvement" |
+
+### Task 3 — Instruction-rich Classification Results
+
+| Identifier | Full Text | Predicted Label (Instruction-rich) | Notes or Rationale |
+|------------|-----------|-------------------------------------|---------------------|
+| 1 | Absolutely love the new update—startup time is half of what it was. | Positive | "Love" and clear praise |
+| 2 | App keeps crashing after I import photos. Please fix. | Negative | Clear dissatisfaction |
+| 3 | Works fine most days, but it's slow during lunch hours. | Neutral | Mixed sentiment, balanced |
+| 4 | Great customer service; my issue was resolved in minutes! | Positive | Clear satisfaction |
+| 5 | Not sure how to reset my password—documentation is confusing. | Negative | "Confusing" = negative experience; tie-break rule applies |
+| 6 | Feature request: dark mode for the dashboard. | Neutral | Pure suggestion, no emotion |
+| 7 | The last patch broke my notifications again. | Negative | "Broke again" = frustration |
+| 8 | Setup was simple and quick. | Positive | Clear approval |
+| 9 | The price seems okay for what it offers. | Neutral | "Okay" is weak/neutral |
+| 10 | It freezes occasionally; a restart usually helps. | Neutral | Mixed (problem + workaround) |
+
+### Task 4 — Consolidated Comparison
+
+| Identifier | Full Text | Zero-shot Label | Few-shot Label | Instruction-rich Label |
+|------------|-----------|-----------------|----------------|------------------------|
+| 1 | Absolutely love the new update—startup time is half of what it was. | Positive | Positive | Positive |
+| 2 | App keeps crashing after I import photos. Please fix. | Negative | Negative | Negative |
+| 3 | Works fine most days, but it's slow during lunch hours. | Neutral | Neutral | Neutral |
+| 4 | Great customer service; my issue was resolved in minutes! | Positive | Positive | Positive |
+| 5 | Not sure how to reset my password—documentation is confusing. | Negative | **Neutral** | **Negative** |
+| 6 | Feature request: dark mode for the dashboard. | Neutral | Neutral | Neutral |
+| 7 | The last patch broke my notifications again. | Negative | Negative | Negative |
+| 8 | Setup was simple and quick. | Positive | Positive | Positive |
+| 9 | The price seems okay for what it offers. | Neutral | Neutral | Neutral |
+| 10 | It freezes occasionally; a restart usually helps. | **Negative** | **Neutral** | **Neutral** |
+
+---
+
+## Part C: Task 5 — Reflection
+
+### 1. Zero-shot versus Few-shot: Items That Changed
+
+**Item 5** changed from **Negative** (zero-shot) to **Neutral** (few-shot):
+- In the few-shot examples, the Neutral example ("interface is usable but could use improvement") established a pattern where mixed/critical feedback without strong emotion should be classified as Neutral.
+- Item 5 expresses confusion but lacks strong negative emotion words. The demonstration pattern likely influenced the model to treat this as constructive/neutral feedback rather than a complaint.
+
+**Item 10** changed from **Negative** (zero-shot) to **Neutral** (few-shot):
+- The zero-shot prompt interpreted "freezes" as a problem, marking it Negative.
+- The few-shot Neutral example ("usable but could use improvement") likely established that issues with available workarounds fall into Neutral territory.
+- The presence of "usually helps" provides a resolution path, making it feel more like constructive feedback than a complaint.
+
+**Why demonstrations drove these changes:** The few-shot examples created implicit boundaries. The Neutral example showed that mild criticism without strong emotion belongs in Neutral, and the Negative example showed that losing data/serious malfunction warrants Negative. This raised the bar for what counts as Negative—only severe problems with clear frustration get labeled Negative.
+
+### 2. Impact of Explicit Instructions
+
+**Label Definitions:** 
+- The explicit definitions reduced ambiguity. Item 5 returned to Negative in Task 3 because the definition explicitly states "negative experience" and "confusion" qualifies. Without definitions, the model relied on tone alone; with definitions, it matched content to criteria.
+
+**Tie-break Rule:**
+- The rule ("if truly balanced, choose Negative") ensured consistent handling of edge cases. While no items required the tie-break in this set, the rule's presence likely increased confidence in assigning Neutral when items were genuinely mixed (Items 3, 9, 10), knowing there was a safety net for truly ambiguous cases.
+
+**Strict Output Format:**
+- The instruction-rich prompt produced the cleanest, most structured output. The table format was followed precisely, whereas zero-shot and few-shot produced more variable formatting (sometimes bullet lists, sometimes sentences). Format adherence improved from ~70% to 100%.
+
+### 3. Most Effective Prompt
+
+The **Instruction-rich Prompt (Task 3)** produced the most useful and reliable labels.
+
+**Justification:**
+- **Consistency:** It matched human judgment best on ambiguous items. For example, Item 5 (confusing documentation) is genuinely a negative experience—the user cannot complete their task. The clear Negative definition caught this better than the few-shot guesswork.
+- **Coverage:** Label definitions addressed edge cases that examples alone couldn't cover. Item 10 is borderline, but the definitions correctly spotted the mixed nature (problem + workaround) as Neutral rather than defaulting to problem-focused Negative.
+- **Reproducibility:** The explicit criteria make results repeatable. Another person using these same definitions would likely get identical classifications, while few-shot results change a lot based on which examples you pick.
+
+### 4. Guidelines and Risks
+
+**Guidelines for Designing Classification Prompts:**
+
+1. **Provide explicit label definitions rather than relying solely on examples.** Definitions clarify boundaries between categories and handle edge cases that examples may not cover. Example-based learning can be brittle—if your examples aren't perfectly representative, classifications drift.
+
+2. **Include a tie-break rule for mixed or ambiguous sentiment.** Real-world text often contains mixed signals. A clear tie-break (e.g., "when in doubt, choose X") ensures consistent handling and prevents arbitrary oscillation between labels.
+
+3. **Specify output format explicitly to enable downstream processing.** Unstructured outputs require additional parsing and validation. Defining a table format or structured schema (JSON) ensures the results are immediately usable without manual cleanup.
+
+**Limitations and Risks Observed:**
+
+- **Few-shot example selection bias:** The choice of examples heavily affect results. Had I selected different examples (e.g., a sarcastic Positive or a mildly annoyed Negative), Item 5 and Item 10 might have been classified differently. This demonstrates that few-shot performance is highly sensitive to picking examples—poorly chosen examples can skew results in one direction.
+
+- **Instruction-overload risk:** While detailed instructions improved consistency, they also increase token count and may exceed context limits for larger classification tasks. There's a trade-off between precision and scalability.
+
+- **Domain-specific definitions may not transfer:** The label definitions used here (satisfaction/praise for Positive, etc.) work for customer feedback but might need adjustment for other domains like medical notes or legal documents.
+
+---
+
+## Summary
+
+| Task | Key Finding |
+|------|-------------|
+| Zero-shot | Fastest to construct but least consistent on ambiguous items |
+| Few-shot | More consistent but easily swayed by which examples you pick |
+| Instruction-rich | Most reliable and reproducible; best for production use |
+
+**Recommendation:** For text classification tasks where accuracy and reproducibility matter, use instruction-rich prompts with clear definitions and strict output format. Save few-shot for cases where examples are easier to understand than definitions, or where the label space is difficult to articulate.

@@ -52,15 +52,20 @@ federal-contract-prediction/
 │   └── processed/                     # Final clean datasets ready for modeling
 │       ├── labeled_contracts.parquet   # Filtered + labeled contracts (primary dataset)
 │       ├── labeled_contracts.csv       # Same data in CSV for quick inspection
-│       ├── gao_validation_set.csv      # Extracted GAO cost/schedule data (Gemini output)
-│       ├── gao_fpds_linked.csv         # GAO data linked to FPDS records (validation subset)
+│       ├── gao_validation_set.csv      # Extracted GAO cost/schedule data (1,059 programs)
+│       ├── gao_fpds_linked.csv         # GAO-FPDS linked (140 programs matched to FPDS)
+│       ├── gao_fpds_matches_detail.csv # Detailed match records
+│       ├── validation_report.txt       # Cross-validation metrics (N=121 contracts)
 │       └── dataset_summary.txt         # Metadata: row counts, class balance, quality stats
 │
 ├── scripts/
 │   ├── fpds_filter_and_label.py       # Standalone script version of filtering + label pipeline
-│   ├── gemini_batch_extract.py        # Sends GAO PDF chunks to Gemini API, saves JSON
-│   ├── gemini_parse_results.py        # Parses Gemini JSON into gao_validation_set.csv
-│   └── link_gao_to_fpds.py           # Fuzzy-matches GAO programs to FPDS contracts
+│   ├── chunk_gao_pdfs_v2.py           # Chunks GAO PDFs into 80-page overlapping sections
+│   ├── claude_batch_extract.py        # Sends GAO PDF chunks to Claude API, saves JSON
+│   ├── test_claude_extract.py         # Smoke test for Claude API connectivity
+│   ├── parse_gao_results.py           # Parses and merges Claude JSON into gao_validation_set.csv
+│   ├── link_gao_to_fpds_v2.py         # Strict token matching for GAO-FPDS linking
+│   └── gao_validation_analysis.py     # Standalone validation analysis with cross-validation metrics
 │
 ├── figures/
 │   ├── class_balance.png              # Bar chart of over_budget and late distributions
@@ -140,24 +145,41 @@ Final Report
 This runs in parallel with the main pipeline during Weeks 1-2 and feeds into evaluation in Weeks 7-8.
 
 ```
-GAO Weapon Systems PDFs (22 reports, 2003-2025)
+GAO Weapon Systems Annual Assessment PDFs (17 reports, 2003-2025)
         │
         ▼
-[Chunk PDFs into 5-10 page sections]
+[Chunk PDFs into 80-page overlapping sections]
         │  Output: data/interim/gao_chunks/
         ▼
-[Gemini Batch API: Extract structured data]
+[Claude API: Extract structured data]
         │  Send chunks with JSON extraction prompt
+        │  Model: claude-3-haiku-20240307 (cost-optimized)
         │  Output: data/interim/gao_results/ (raw JSON)
         ▼
 [Parse JSON into DataFrame]
         │  Output: data/processed/gao_validation_set.csv
+        │  Records: 1,059 programs extracted
         ▼
-[Fuzzy-match GAO programs to FPDS contracts]
+[Token-match GAO programs to FPDS contracts]
+        │  Strategy: distinctive token matching (acronyms + model numbers)
         │  Output: data/processed/gao_fpds_linked.csv
+        │  Matches: 140 programs linked to FPDS
         ▼
-[Feed into Evaluation - Notebook 09]
+[Validate classifier predictions against GAO ground truth]
+        │  Sample: N=121 contracts with both FPDS labels and GAO extractions
+        │  Metrics: cost agreement, schedule agreement
+        ▼
+[Feed into Evaluation - Notebook 07]
 ```
+
+**GAO Validation Metrics:**
+- **Reports processed:** 17 (2003-2025, all Weapon Systems Annual Assessments)
+- **Programs extracted:** 1,059
+- **FPDS linkages:** 140 programs matched
+- **Validation sample:** N=121 contracts with GAO↔FPDS agreement
+- **Cost agreement rate:** ~60% (within threshold tolerance)
+- **Schedule agreement rate:** ~70%
+- **Status:** Headline validation metric (N > 50 threshold met)
 
 ---
 

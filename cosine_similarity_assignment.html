@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosine Similarity Assignment</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=STIX+Two+Math&family=Inter:wght@400;600;700&display=swap');
+
+        :root {
+            --primary: #1a365d;
+            --accent: #2b6cb0;
+            --bg: #ffffff;
+            --text: #1a202c;
+            --muted: #718096;
+            --border: #e2e8f0;
+            --highlight: #ebf8ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            color: var(--text);
+            background: var(--bg);
+            line-height: 1.7;
+            padding: 48px 60px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        @media print {
+            body { padding: 24px 36px; font-size: 11pt; }
+            .page-break { page-break-before: always; }
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            color: var(--primary);
+            border-bottom: 3px solid var(--accent);
+            padding-bottom: 8px;
+            margin-bottom: 6px;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 0.95rem;
+            margin-bottom: 28px;
+        }
+
+        h2 {
+            font-size: 1.25rem;
+            color: var(--primary);
+            margin-top: 32px;
+            margin-bottom: 12px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h2 .pts {
+            font-weight: 400;
+            color: var(--muted);
+            font-size: 0.85rem;
+        }
+
+        h3 {
+            font-size: 1.05rem;
+            color: var(--accent);
+            margin-top: 16px;
+            margin-bottom: 6px;
+        }
+
+        .math {
+            font-family: 'STIX Two Math', 'Cambria Math', 'Times New Roman', serif;
+            font-size: 1.05em;
+        }
+
+        .formula-block {
+            background: var(--highlight);
+            border-left: 4px solid var(--accent);
+            padding: 12px 18px;
+            margin: 10px 0 16px 0;
+            border-radius: 0 6px 6px 0;
+            font-family: 'STIX Two Math', 'Cambria Math', serif;
+            font-size: 1.05em;
+            line-height: 2;
+        }
+
+        .data-box {
+            background: #f7fafc;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin: 12px 0 20px 0;
+            font-family: 'STIX Two Math', 'Cambria Math', serif;
+            font-size: 1.05em;
+            line-height: 2;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 0.92rem;
+        }
+
+        th {
+            background: var(--primary);
+            color: #fff;
+            padding: 10px 12px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        tr:nth-child(even) { background: #f7fafc; }
+
+        .step { margin-left: 16px; margin-bottom: 4px; }
+
+        .result {
+            display: inline-block;
+            background: #e6fffa;
+            border: 1px solid #81e6d9;
+            border-radius: 4px;
+            padding: 2px 10px;
+            font-weight: 600;
+            color: #234e52;
+        }
+
+        .explanation {
+            background: #fffff0;
+            border: 1px solid #ecc94b;
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin: 12px 0;
+            line-height: 1.7;
+        }
+
+        .rank-list {
+            list-style: none;
+            padding: 0;
+            margin: 8px 0;
+        }
+
+        .rank-list li {
+            padding: 6px 12px;
+            margin: 4px 0;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .rank-list li:nth-child(1) { background: #c6f6d5; color: #22543d; }
+        .rank-list li:nth-child(2) { background: #e6fffa; color: #234e52; }
+        .rank-list li:nth-child(3) { background: #fefcbf; color: #744210; }
+        .rank-list li:nth-child(4) { background: #fed7d7; color: #742a2a; }
+
+        .top-k-box {
+            background: #ebf8ff;
+            border: 2px solid var(--accent);
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin: 12px 0;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<h1>Cosine Similarity Assignment</h1>
+<p class="subtitle">IS 392 &mdash; NLP Performance Metrics &amp; Vector Representations (CLO4/CLO5)</p>
+
+<!-- ===== GIVEN DATA ===== -->
+<div class="data-box">
+    <strong>Given Vectors (5-dimensional):</strong><br>
+    Query: &nbsp; <strong>q</strong> = [1, 2, 0, 1, 0]<br>
+    Document 1: &nbsp; <strong>d<sub>1</sub></strong> = [1, 1, 0, 1, 0]<br>
+    Document 2: &nbsp; <strong>d<sub>2</sub></strong> = [0, 1, 2, 0, 1]<br>
+    Document 3: &nbsp; <strong>d<sub>3</sub></strong> = [2, 0, 1, 0, 2]<br>
+    Document 4: &nbsp; <strong>d<sub>4</sub></strong> = [1, 2, 1, 0, 0]<br><br>
+    <strong>Cosine Similarity Formula:</strong> &nbsp;
+    cos(<strong>q</strong>, <strong>d</strong>) = (<strong>q</strong> &middot; <strong>d</strong>) / ( ||<strong>q</strong>|| &times; ||<strong>d</strong>|| )
+</div>
+
+<!-- ============================================================ -->
+<!-- PART 1: NORMS -->
+<!-- ============================================================ -->
+<h2>Part 1 &mdash; Vector Norms <span class="pts">(5 pts)</span></h2>
+
+<h3>||q|| &mdash; Norm of Query</h3>
+<div class="formula-block">
+    ||<strong>q</strong>||&sup2; = 1&sup2; + 2&sup2; + 0&sup2; + 1&sup2; + 0&sup2; = 1 + 4 + 0 + 1 + 0 = <strong>6</strong><br>
+    ||<strong>q</strong>|| = &radic;6 &asymp; <span class="result">2.449</span>
+</div>
+
+<h3>||d<sub>1</sub>|| &mdash; Norm of Document 1</h3>
+<div class="formula-block">
+    ||<strong>d<sub>1</sub></strong>||&sup2; = 1&sup2; + 1&sup2; + 0&sup2; + 1&sup2; + 0&sup2; = 1 + 1 + 0 + 1 + 0 = <strong>3</strong><br>
+    ||<strong>d<sub>1</sub></strong>|| = &radic;3 &asymp; <span class="result">1.732</span>
+</div>
+
+<h3>||d<sub>2</sub>|| &mdash; Norm of Document 2</h3>
+<div class="formula-block">
+    ||<strong>d<sub>2</sub></strong>||&sup2; = 0&sup2; + 1&sup2; + 2&sup2; + 0&sup2; + 1&sup2; = 0 + 1 + 4 + 0 + 1 = <strong>6</strong><br>
+    ||<strong>d<sub>2</sub></strong>|| = &radic;6 &asymp; <span class="result">2.449</span>
+</div>
+
+<h3>||d<sub>3</sub>|| &mdash; Norm of Document 3</h3>
+<div class="formula-block">
+    ||<strong>d<sub>3</sub></strong>||&sup2; = 2&sup2; + 0&sup2; + 1&sup2; + 0&sup2; + 2&sup2; = 4 + 0 + 1 + 0 + 4 = <strong>9</strong><br>
+    ||<strong>d<sub>3</sub></strong>|| = &radic;9 = <span class="result">3.000</span>
+</div>
+
+<h3>||d<sub>4</sub>|| &mdash; Norm of Document 4</h3>
+<div class="formula-block">
+    ||<strong>d<sub>4</sub></strong>||&sup2; = 1&sup2; + 2&sup2; + 1&sup2; + 0&sup2; + 0&sup2; = 1 + 4 + 1 + 0 + 0 = <strong>6</strong><br>
+    ||<strong>d<sub>4</sub></strong>|| = &radic;6 &asymp; <span class="result">2.449</span>
+</div>
+
+<!-- Norms Summary Table -->
+<table>
+    <tr>
+        <th>Vector</th><th>Squared Sum</th><th>Norm (exact)</th><th>Norm (decimal)</th>
+    </tr>
+    <tr><td><strong>q</strong></td><td>6</td><td>&radic;6</td><td>2.449</td></tr>
+    <tr><td><strong>d<sub>1</sub></strong></td><td>3</td><td>&radic;3</td><td>1.732</td></tr>
+    <tr><td><strong>d<sub>2</sub></strong></td><td>6</td><td>&radic;6</td><td>2.449</td></tr>
+    <tr><td><strong>d<sub>3</sub></strong></td><td>9</td><td>3</td><td>3.000</td></tr>
+    <tr><td><strong>d<sub>4</sub></strong></td><td>6</td><td>&radic;6</td><td>2.449</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<!-- PART 2: DOT PRODUCTS -->
+<!-- ============================================================ -->
+<h2>Part 2 &mdash; Dot Products <span class="pts">(4 pts)</span></h2>
+
+<h3>q &middot; d<sub>1</sub></h3>
+<div class="formula-block">
+    <strong>q</strong> &middot; <strong>d<sub>1</sub></strong> = (1)(1) + (2)(1) + (0)(0) + (1)(1) + (0)(0)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = 1 + 2 + 0 + 1 + 0 = <span class="result">4</span>
+</div>
+
+<h3>q &middot; d<sub>2</sub></h3>
+<div class="formula-block">
+    <strong>q</strong> &middot; <strong>d<sub>2</sub></strong> = (1)(0) + (2)(1) + (0)(2) + (1)(0) + (0)(1)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = 0 + 2 + 0 + 0 + 0 = <span class="result">2</span>
+</div>
+
+<h3>q &middot; d<sub>3</sub></h3>
+<div class="formula-block">
+    <strong>q</strong> &middot; <strong>d<sub>3</sub></strong> = (1)(2) + (2)(0) + (0)(1) + (1)(0) + (0)(2)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = 2 + 0 + 0 + 0 + 0 = <span class="result">2</span>
+</div>
+
+<h3>q &middot; d<sub>4</sub></h3>
+<div class="formula-block">
+    <strong>q</strong> &middot; <strong>d<sub>4</sub></strong> = (1)(1) + (2)(2) + (0)(1) + (1)(0) + (0)(0)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = 1 + 4 + 0 + 0 + 0 = <span class="result">5</span>
+</div>
+
+<!-- Dot Products Summary Table -->
+<table>
+    <tr>
+        <th>Pair</th><th>Per-Coordinate Products</th><th>Sum (Dot Product)</th>
+    </tr>
+    <tr><td>q &middot; d<sub>1</sub></td><td>1 + 2 + 0 + 1 + 0</td><td><strong>4</strong></td></tr>
+    <tr><td>q &middot; d<sub>2</sub></td><td>0 + 2 + 0 + 0 + 0</td><td><strong>2</strong></td></tr>
+    <tr><td>q &middot; d<sub>3</sub></td><td>2 + 0 + 0 + 0 + 0</td><td><strong>2</strong></td></tr>
+    <tr><td>q &middot; d<sub>4</sub></td><td>1 + 4 + 0 + 0 + 0</td><td><strong>5</strong></td></tr>
+</table>
+
+<!-- ============================================================ -->
+<!-- PART 3: COSINE SIMILARITIES -->
+<!-- ============================================================ -->
+<div class="page-break"></div>
+<h2>Part 3 &mdash; Cosine Similarities <span class="pts">(10 pts)</span></h2>
+
+<h3>cos(q, d<sub>1</sub>)</h3>
+<div class="formula-block">
+    cos(<strong>q</strong>, <strong>d<sub>1</sub></strong>) = (<strong>q</strong> &middot; <strong>d<sub>1</sub></strong>) / (||<strong>q</strong>|| &times; ||<strong>d<sub>1</sub></strong>||)<br><br>
+    = 4 / (&radic;6 &times; &radic;3)<br><br>
+    = 4 / &radic;18<br><br>
+    = 4 / (3&radic;2)<br><br>
+    = 4 / 4.24264...<br><br>
+    = <span class="result">0.943</span>
+</div>
+
+<h3>cos(q, d<sub>2</sub>)</h3>
+<div class="formula-block">
+    cos(<strong>q</strong>, <strong>d<sub>2</sub></strong>) = (<strong>q</strong> &middot; <strong>d<sub>2</sub></strong>) / (||<strong>q</strong>|| &times; ||<strong>d<sub>2</sub></strong>||)<br><br>
+    = 2 / (&radic;6 &times; &radic;6)<br><br>
+    = 2 / 6<br><br>
+    = 1 / 3<br><br>
+    = <span class="result">0.333</span>
+</div>
+
+<h3>cos(q, d<sub>3</sub>)</h3>
+<div class="formula-block">
+    cos(<strong>q</strong>, <strong>d<sub>3</sub></strong>) = (<strong>q</strong> &middot; <strong>d<sub>3</sub></strong>) / (||<strong>q</strong>|| &times; ||<strong>d<sub>3</sub></strong>||)<br><br>
+    = 2 / (&radic;6 &times; 3)<br><br>
+    = 2 / (3&radic;6)<br><br>
+    = 2 / 7.34847...<br><br>
+    = <span class="result">0.272</span>
+</div>
+
+<h3>cos(q, d<sub>4</sub>)</h3>
+<div class="formula-block">
+    cos(<strong>q</strong>, <strong>d<sub>4</sub></strong>) = (<strong>q</strong> &middot; <strong>d<sub>4</sub></strong>) / (||<strong>q</strong>|| &times; ||<strong>d<sub>4</sub></strong>||)<br><br>
+    = 5 / (&radic;6 &times; &radic;6)<br><br>
+    = 5 / 6<br><br>
+    = <span class="result">0.833</span>
+</div>
+
+<!-- Complete Workspace Table -->
+<h3>Complete Workspace Summary</h3>
+<table>
+    <tr>
+        <th>Pair</th>
+        <th>Dot Product</th>
+        <th>||q||</th>
+        <th>||d||</th>
+        <th>Cosine (fraction)</th>
+        <th>Cosine (3 d.p.)</th>
+    </tr>
+    <tr>
+        <td>q vs d<sub>1</sub></td>
+        <td>4</td>
+        <td>&radic;6</td>
+        <td>&radic;3</td>
+        <td>4 / (&radic;6 &times; &radic;3) = 4/&radic;18</td>
+        <td><strong>0.943</strong></td>
+    </tr>
+    <tr>
+        <td>q vs d<sub>2</sub></td>
+        <td>2</td>
+        <td>&radic;6</td>
+        <td>&radic;6</td>
+        <td>2 / (&radic;6 &times; &radic;6) = 2/6</td>
+        <td><strong>0.333</strong></td>
+    </tr>
+    <tr>
+        <td>q vs d<sub>3</sub></td>
+        <td>2</td>
+        <td>&radic;6</td>
+        <td>3</td>
+        <td>2 / (&radic;6 &times; 3) = 2/(3&radic;6)</td>
+        <td><strong>0.272</strong></td>
+    </tr>
+    <tr>
+        <td>q vs d<sub>4</sub></td>
+        <td>5</td>
+        <td>&radic;6</td>
+        <td>&radic;6</td>
+        <td>5 / (&radic;6 &times; &radic;6) = 5/6</td>
+        <td><strong>0.833</strong></td>
+    </tr>
+</table>
+
+<!-- ============================================================ -->
+<!-- PART 4: RANKING & TOP-K -->
+<!-- ============================================================ -->
+<h2>Part 4 &mdash; Ranking &amp; Top-k Selection <span class="pts">(3 pts)</span></h2>
+
+<h3>Ranking (Most Similar &rarr; Least Similar)</h3>
+<ol class="rank-list">
+    <li>1st &mdash; Document 1 (d<sub>1</sub>): &nbsp; cos = 0.943</li>
+    <li>2nd &mdash; Document 4 (d<sub>4</sub>): &nbsp; cos = 0.833</li>
+    <li>3rd &mdash; Document 2 (d<sub>2</sub>): &nbsp; cos = 0.333</li>
+    <li>4th &mdash; Document 3 (d<sub>3</sub>): &nbsp; cos = 0.272</li>
+</ol>
+
+<div class="top-k-box">
+    <strong>Top-k = 2 Selection:</strong> &nbsp; Document 1 (d<sub>1</sub>) and Document 4 (d<sub>4</sub>)<br>
+    <em>Tie-break rule (if needed): select the document with the smallest document ID first.</em>
+</div>
+
+<div class="explanation">
+    <strong>Why cosine similarity ignores pure magnitude:</strong>
+    Cosine similarity measures the cosine of the angle between two vectors, which depends solely on their direction and not their length. When vectors are normalized (scaled to unit length), their magnitudes become 1, so the denominator ||<strong>q</strong>|| &times; ||<strong>d</strong>|| equals 1, and the cosine reduces to just the dot product of the unit vectors. This means that two documents with identical term distributions but different total word counts (i.e., one is simply a scaled version of the other) will receive the same cosine score, because scaling a vector changes its magnitude but not its direction.
+</div>
+
+<!-- ============================================================ -->
+<!-- PART 5: SCALING THOUGHT EXPERIMENT -->
+<!-- ============================================================ -->
+<h2>Part 5 &mdash; Scaling Thought Experiment <span class="pts">(3 pts)</span></h2>
+
+<div class="explanation">
+    <strong>Question:</strong> If every component of <strong>d<sub>4</sub></strong> were doubled, would cos(<strong>q</strong>, <strong>d<sub>4</sub></strong>) change?
+</div>
+
+<div class="formula-block">
+    Let <strong>d<sub>4</sub>&prime;</strong> = 2 &middot; <strong>d<sub>4</sub></strong> = [2, 4, 2, 0, 0]<br><br>
+
+    <strong>New dot product:</strong> &nbsp; <strong>q</strong> &middot; <strong>d<sub>4</sub>&prime;</strong> = 2 &times; (<strong>q</strong> &middot; <strong>d<sub>4</sub></strong>) = 2 &times; 5 = 10<br><br>
+
+    <strong>New norm:</strong> &nbsp; ||<strong>d<sub>4</sub>&prime;</strong>|| = 2 &times; ||<strong>d<sub>4</sub></strong>|| = 2&radic;6<br><br>
+
+    <strong>New cosine:</strong><br>
+    cos(<strong>q</strong>, <strong>d<sub>4</sub>&prime;</strong>) = 10 / (&radic;6 &times; 2&radic;6) = 10 / (2 &times; 6) = 10 / 12 = 5/6 &asymp; <span class="result">0.833</span>
+</div>
+
+<div class="explanation">
+    <strong>Answer: No, cos(q, d<sub>4</sub>) would not change.</strong>
+    Doubling every component of <strong>d<sub>4</sub></strong> multiplies the dot product by 2 (numerator becomes 2 &times; original) and also multiplies the norm ||<strong>d<sub>4</sub></strong>|| by 2 (denominator becomes 2 &times; original). These factors of 2 cancel exactly in the fraction, leaving the cosine value unchanged at 5/6 &asymp; 0.833. More generally, for any positive scalar <em>c</em>, cos(<strong>q</strong>, <em>c</em> &middot; <strong>d</strong>) = (<em>c</em> &middot; <strong>q</strong> &middot; <strong>d</strong>) / (||<strong>q</strong>|| &times; <em>c</em> &middot; ||<strong>d</strong>||) = cos(<strong>q</strong>, <strong>d</strong>), confirming that cosine similarity is invariant to uniform scaling of either vector.
+</div>
+
+</body>
+</html>

@@ -1,0 +1,35 @@
+Extract information about weapon system programs from this GAO Weapon Systems Annual Assessment report chunk.
+
+Return ONLY a valid JSON array. No markdown, no explanation, no code blocks.
+
+Each object in the array must have these exact keys:
+- "program_name": Name of the weapon system program (string, uppercase)
+- "report_year": Year of the GAO report as 4-digit integer
+- "service_branch": Military branch - one of: "Army", "Navy", "Air Force", "Marine Corps", "Space Force", "Joint", or null
+- "baseline_cost_millions": Original estimated cost in millions USD (number or null)
+- "current_cost_millions": Current estimated cost in millions USD (number or null)
+- "cost_growth_percent": Percentage cost growth from baseline to current (number or null)
+- "original_ioc_date": Original Initial Operational Capability date as "YYYY-MM" or null
+- "current_ioc_date": Current IOC date as "YYYY-MM" or null
+- "schedule_delay_months": Schedule delay in months from original to current IOC (number or null)
+- "nunn_mccurdy_breach": Whether Nunn-McCurdy threshold was breached - true, false, or null
+- "primary_challenge": Main technical or management issue causing problems (text or null)
+
+Use null for any value not explicitly stated in the document. Never guess or estimate.
+
+Example output format:
+[
+  {
+    "program_name": "F-35 Joint Strike Fighter",
+    "report_year": 2024,
+    "service_branch": "Air Force",
+    "baseline_cost_millions": 233000,
+    "current_cost_millions": 412000,
+    "cost_growth_percent": 76.8,
+    "original_ioc_date": "2012-12",
+    "current_ioc_date": "2024-03",
+    "schedule_delay_months": 135,
+    "nunn_mccurdy_breach": true,
+    "primary_challenge": "software development and integration"
+  }
+]

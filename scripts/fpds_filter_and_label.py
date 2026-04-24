@@ -72,7 +72,10 @@ COLUMN_MAP = {
 COLUMNS_TO_READ = list(COLUMN_MAP.values())
 
 # Cost overrun threshold (%)
-COST_OVERRUN_THRESHOLD = 10.0
+# Centralized value: 5% primary, 1% adaptive fallback if positive class < 5%
+COST_OVERRUN_THRESHOLD = 5.0
+COST_OVERRUN_THRESHOLD_FALLBACK = 1.0
+MIN_POSITIVE_RATE = 0.05  # 5% minimum positive class before fallback
 
 # Pipeline metadata collector
 META = {
@@ -431,12 +434,29 @@ def phase4_construct_labels(df):
         np.nan
     )
 
-    # over_budget
+    # over_budget with adaptive fallback
+    # First apply primary threshold (5%)
     labeled["over_budget"] = np.where(
         labeled["cost_growth_pct"].notna(),
         (labeled["cost_growth_pct"] > COST_OVERRUN_THRESHOLD).astype(int),
         np.nan
     )
+
+    # Adaptive fallback: if positive class < 5%, use 1% threshold
+    positive_rate = labeled["over_budget"].mean()
+    if positive_rate < MIN_POSITIVE_RATE:
+        print(f"  Adaptive threshold triggered: {positive_rate:.2%} positives < {MIN_POSITIVE_RATE:.0%}")
+        print(f"  Lowering threshold from {COST_OVERRUN_THRESHOLD}% to {COST_OVERRUN_THRESHOLD_FALLBACK}%")
+        labeled["over_budget"] = np.where(
+            labeled["cost_growth_pct"].notna(),
+            (labeled["cost_growth_pct"] > COST_OVERRUN_THRESHOLD_FALLBACK).astype(int),
+            np.nan
+        )
+        final_threshold = COST_OVERRUN_THRESHOLD_FALLBACK
+    else:
+        final_threshold = COST_OVERRUN_THRESHOLD
+
+    META["cost_overrun_threshold_used"] = final_threshold
 
     # delay_days
     labeled["delay_days"] = np.where(
