@@ -126,14 +126,30 @@ Figshare Parquet Shards (99M records, 470 columns)
         │    Config C: combined (structured + TF-IDF)
         │    Config D: structured + LDA topics (Track A subset)
         ▼
-[Classification — Section 11]
-        │  Train logistic regression + random forest on each config
-        │  Stratified 80/20 train-test split, class_weight='balanced'
+[Classification — Notebook 06]
+        │  Feature engineering:
+        │    - Phase 2A: Temporal features (year, quarter, month, EOFY flag, duration, years_since_2015)
+        │    - Phase 2B: Interaction features (size×mods, competition×size, EOFY×size)
+        │    - Phase 2C: SelectKBest (f_classif) reduces TF-IDF 5000 → 100 for configs B/D
+        │  Training:
+        │    - Logistic regression + random forest on each (target, config)
+        │    - Phase 1A: SMOTE with sampling_strategy=0.3 (partial balance)
+        │    - class_weight='balanced' throughout
+        │    - Stratified 80/20 train-test split
         ▼
-[Evaluation]
-        │  Classification reports, F1, AUC-ROC
-        │  ROC curves comparison across all configs
-        │  Optional: validate against GAO data (gao_fpds_linked.csv)
+[Evaluation — Notebook 06]
+        │  Phase 1B: F1-optimal probability threshold from PR curve
+        │  Phase 1C: 5-fold stratified cross-validation (mean±std)
+        │  Phase 3A/3B: GridSearchCV hyperparameter tuning (LR + RF)
+        │  Phase 3C: SMOTE variants comparison (SMOTE, BorderlineSMOTE, ADASYN)
+        │  Outputs: results_comparison.csv, cv_results.csv, tuning_results.csv
+        ▼
+[GAO Validation — Notebook 07]
+        │  1,059 programs extracted from 17 GAO reports (2003-2025)
+        │  140 programs linked to FPDS; N=121 validation sample
+        ▼
+[Final Submission — Notebook 08]
+        │  Research question summary + ROC curves + feature importance
         ▼
 Final Report
 ```

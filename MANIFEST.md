@@ -28,7 +28,11 @@ Generated: 2026-04-24
 | `labeled_contracts.csv` | 11.8 MB | Main labeled dataset |
 | `doc_topic_matrix.parquet` | 1.2 MB | LDA topic vectors |
 | `tfidf_matrix.npz` | 1.9 MB | Sparse TF-IDF matrix |
-| `results_comparison.csv` | 1.3 KB | Classification metrics |
+| `tfidf_corpus_piids.txt` | ~1 MB | PIID list for TF-IDF rows (alignment) |
+| `temporal_features.csv` | ~2 MB | Phase 2A: Per-PIID contract dates and derived features |
+| `results_comparison.csv` | 4 KB | Classification metrics (single 80/20 split, F1-optimal threshold) |
+| `cv_results.csv` | 3 KB | Phase 1C: 5-fold stratified CV results (mean±std) |
+| `tuning_results.csv` | 1 KB | Phase 3: GridSearchCV + SMOTE variant comparisons |
 | `validation_report.txt` | 26.7 KB | GAO validation analysis |
 
 ### Models (`models/`)

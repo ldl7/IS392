@@ -84,9 +84,9 @@ jupyter nbconvert --execute notebooks/06_classification.ipynb
 2. **Text Preprocessing** (Notebook 05): Two-track approach
    - **Track A (LDA):** 9,498 descriptions ≥100 chars → 12 LDA topics
    - **Track B (TF-IDF):** All 45,456 descriptions → 5,000 features
-3. **Classification** (Notebook 06): 4 configs × 2 algorithms × 2 targets = 16 models
-   - **Best for `late`:** Config D (RF) — F1=0.871, AUC=0.852
-   - **Best for `over_budget`:** Config A (LR) — F1=0.298, AUC=0.730
+3. **Classification** (Notebook 06): 4 configs × 2 algorithms × 2 targets = 16 models, evaluated with 5-fold stratified cross-validation, F1-optimal threshold tuning, SMOTE oversampling, and hyperparameter tuning via GridSearchCV
+   - **Best for `late` (5-fold CV):** Config D (RF) — F1=0.881±0.003, AUC=0.890±0.003
+   - **Best for `over_budget` (5-fold CV):** Config D (LR) — F1=0.358±0.010, AUC=0.775±0.003
 4. **GAO Validation** (Notebook 07): Independent ground truth check
    - 17 GAO reports processed (2003-2025)
    - 1,059 programs extracted, 140 linked to FPDS
@@ -96,10 +96,26 @@ jupyter nbconvert --execute notebooks/06_classification.ipynb
 
 - **Cost overrun threshold:** 5% primary, adaptive fallback to 1% if positive class < 5%
 - **Description cutoff:** LDA requires ≥100 characters (20.6% of data); TF-IDF has no minimum
-- **Class imbalance:** `over_budget` 10.4% (no SMOTE needed); `late` 61.5% (no SMOTE needed)
+- **Class imbalance:** `over_budget` 10.4% — SMOTE with `sampling_strategy=0.3` (partial balance); `late` 61.5% (no SMOTE needed)
 - **Validation:** N=121 (expanded from 17 via GAO 2003-2025 expansion) meets >50 threshold for headline metric
 - **LDA:** K=12 topics selected via coherence tuning (C_v metric)
-- **Text features:** TF-IDF adds minimal value; structured features dominate performance
+- **Temporal features (Phase 2A):** contract start year/quarter/month, end-of-fiscal-year flag (Sept starts = 32% of data), planned duration, years-since-2015
+- **Interaction features (Phase 2B):** size × modifications, competition × size, EOFY × size
+- **Feature selection (Phase 2C):** SelectKBest (f_classif) reduces TF-IDF from 5,000 → 100 features for Configs B/D
+- **Threshold tuning (Phase 1B):** F1-optimal probability threshold from PR curve (default 0.5 is suboptimal for imbalanced targets)
+- **Cross-validation (Phase 1C):** 5-fold stratified, reported as mean±std
+- **Hyperparameter tuning (Phase 3):** GridSearchCV on Config A (for speed), applied to Config D; best SMOTE variant: BorderlineSMOTE
+- **Text features:** TF-IDF adds minimal value on its own; in combined Config D it provides incremental lift
+
+## Improvement Over Baseline
+
+| Metric | Baseline | After Improvements | Change |
+|--------|----------|---------------------|--------|
+| `over_budget` F1 | 0.336 | **0.358**±0.010 | +6.7% |
+| `late` F1 | 0.869 | **0.881**±0.003 | +1.3% |
+| `late` AUC | 0.840 | **0.890**±0.003 | +6.0% |
+
+See `data/processed/cv_results.csv` and `data/processed/tuning_results.csv` for full tables.
 
 ## Project Structure
 See `architecture.md` for full directory layout and `MANIFEST.md` for data file inventory.
