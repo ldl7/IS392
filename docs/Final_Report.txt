@@ -1,0 +1,410 @@
+FEDERAL CONTRACT OUTCOME PREDICTION
+Improving Classification Performance for Over-Budget and Late Delivery
+
+FINAL PROJECT REPORT
+
+Leonel Lourenco
+Rana Khan
+
+IS 392 - Data Mining for Business
+New Jersey Institute of Technology
+April 25, 2026
+
+
+1. INTRODUCTION
+
+BACKGROUND AND CONTEXT
+
+Federal agencies award billions of dollars in contracts annually for physical 
+deliverables (goods and services). Cost overruns and schedule delays are 
+persistent challenges in government contracting, leading to wasted taxpayer 
+money and delayed delivery of critical services. The ability to predict which 
+contracts are likely to go over budget or be delivered late before these issues 
+occur would provide valuable decision support for contract managers and 
+procurement officers.
+
+This project develops and improves machine learning classifiers to predict two 
+key binary outcomes for federal contracts: (1) whether a contract will exceed 
+its budget (over_budget), and (2) whether a contract will be delivered late 
+(late). Using only techniques covered in standard classification coursework, 
+we implement a phased improvement pipeline to enhance prediction performance.
+
+RELEVANCE AND INTEREST
+
+This topic is highly relevant for several reasons:
+- Government accountability: Better predictions can help identify high-risk 
+  contracts before they fail
+- Resource allocation: Early warning enables proactive intervention
+- Data availability: USAspending.gov provides rich, publicly accessible data
+  for academic research
+- Real-world impact: Unlike purely academic datasets, these predictions could
+  inform actual procurement decisions
+
+
+2. RESEARCH QUESTIONS
+
+We investigate four primary research questions:
+
+Q1: Can natural language processing (NLP) features combined with structured 
+    contract data predict federal contract outcomes (over-budget and late 
+    delivery) better than either feature type alone?
+
+Q2: Which feature configuration produces the best prediction performance?
+    (structured only, TF-IDF text only, LDA topic modeling only, or combined)
+
+Q3: Do text features (TF-IDF and LDA topics) add meaningful predictive value 
+    over structured features alone?
+
+Q4: How much can systematic improvements to data preprocessing, feature 
+    engineering, and model evaluation improve classification performance?
+
+
+3. DATASET DESCRIPTION
+
+SOURCE AND LINK
+
+The dataset comes from USAspending.gov Federal Procurement Data System (FPDS) 
+records for fiscal years 2015-2024. The data is publicly available at:
+https://www.usaspending.gov/download_center/custom_award_data
+
+KEY VARIABLES AND MEANINGS
+
+Outcome Variables (Labels):
+- over_budget: Binary (1 = final contract value > 1.05 * initial base value,
+                        0 otherwise)
+- late: Binary (1 = final end date > period of performance end date + 90 days,
+               0 otherwise)
+
+Structured Features:
+- log_base_value: Natural log of initial contract value
+- log_initial_duration: Natural log of initially planned contract duration
+- num_modifications: Count of contract modifications
+- num_offers: Number of competitive offers received
+- extent_competed_code: Competition type (coded)
+- contract_bundling_code: Bundling classification (coded)
+- type_of_contract_pricing_code: Pricing structure (coded)
+
+Temporal Features (engineered):
+- contract_start_year, contract_start_quarter, contract_start_month
+- is_end_of_fiscal_year: Contracts starting in September (EOFY rush spending)
+- contract_duration_planned_days: Original planned duration
+- years_since_2015: Linear time trend
+
+Interaction Features (engineered):
+- size_x_mods: log_base_value x log1p(num_modifications)
+- competition_x_size: num_offers x log_base_value
+- eofy_x_size: is_end_of_fiscal_year x log_base_value
+
+Text Features:
+- TF-IDF: 100 reduced dimensions via SelectKBest (from 500)
+- LDA Topics: 10 topic probabilities from topic modeling on descriptions
+
+SIZE AND STRUCTURE
+
+- Total contracts (unique PIIDs): 45,456
+- Text descriptions available: 9,357 (20.6% of contracts)
+- Class balance:
+  * over_budget: 4,725 positives (10.39%) - highly imbalanced
+  * late: 27,961 positives (61.51%) - roughly balanced
+
+PREPROCESSING AND CLEANING
+
+1. Filtered to physical-deliverable contracts only using PSC/NAICS codes
+2. Deduplicated by PIID (unique contract identifier)
+3. Extracted labels by comparing initial vs final values and dates
+4. Removed contracts with missing critical fields
+5. Applied log transforms to right-skewed monetary and duration fields
+6. Aligned all feature sets to common PIID indices for fair comparison
+
+
+4. METHODOLOGY
+
+TECHNIQUES USED
+
+Classification Algorithms:
+- Logistic Regression with balanced class weights
+- Random Forest with balanced class weights
+
+Resampling for Imbalance:
+- SMOTE (Synthetic Minority Over-sampling Technique)
+- BorderlineSMOTE (focused on decision boundary)
+- ADASYN (Adaptive Synthetic Sampling)
+
+Feature Engineering:
+- Temporal feature extraction from contract dates
+- Interaction feature creation
+- SelectKBest feature selection (ANOVA F-statistic)
+
+Evaluation Methods:
+- 5-fold Stratified Cross-Validation
+- GridSearchCV hyperparameter tuning (3-fold inner CV)
+- F1-optimal threshold tuning via precision-recall curve
+- Metrics: F1-score, AUC-ROC, precision, recall
+
+JUSTIFICATION FOR CHOSEN METHODS
+
+We restricted our toolkit to standard course materials (sklearn, imblearn) 
+without advanced libraries like XGBoost or LightGBM. This constraint ensures:
+- Interpretable models suitable for government decision-making
+- Reproducibility with standard Python data science stack
+- Focus on methodology improvements rather than algorithmic complexity
+
+Logistic Regression was chosen for its interpretability and strong baseline 
+performance on structured data. Random Forest provides non-linear pattern 
+capture and robustness to outliers. Both support class_weight parameters for 
+handling imbalance without aggressive resampling.
+
+5-fold Stratified CV was selected to provide honest performance estimates 
+with variance quantification, avoiding overfitting to a single train/test 
+split.
+
+TOOLS AND LIBRARIES
+
+- Python 3.11
+- scikit-learn: classification, cross-validation, feature selection, metrics
+- imbalanced-learn: SMOTE variants for resampling
+- pandas, numpy: data manipulation
+- matplotlib, seaborn: visualization
+- gensim: LDA topic modeling
+
+
+5. RESULTS
+
+HEADLINE PERFORMANCE (5-Fold Cross-Validation)
+
+Table 1: Best Configuration by Target
+
+Target          Config    Algorithm         F1 (CV)        AUC (CV)
+late            D         Random Forest     0.881 +/- 0.003  0.890 +/- 0.003
+over_budget     D         Logistic Reg.     0.358 +/- 0.010  0.775 +/- 0.003
+
+F1-Optimal Thresholds:
+- over_budget: 0.481 (below default 0.5)
+- late: 0.417 (substantially below default 0.5)
+
+
+IMPROVEMENT OVER BASELINE
+
+Table 2: Performance Lift from Phases 1-3
+
+Metric          Baseline    Improved        Lift
+over_budget F1  0.336       0.358 +/- 0.010  +6.7%
+late F1         0.869       0.881 +/- 0.003  +1.3%
+late AUC        0.840       0.890 +/- 0.003  +6.0%
+
+
+CONFIGURATION COMPARISON
+
+Table 3: F1-Score by Feature Configuration
+
+Config  Description                    over_budget F1    late F1
+A       Structured features only       0.334 +/- 0.009   0.879 +/- 0.004
+B       TF-IDF only                    0.243 +/- 0.006   0.767 +/- 0.001
+C       LDA topics only                0.190 +/- 0.000   0.763 +/- 0.000
+D       Combined (all features)        0.358 +/- 0.010   0.881 +/- 0.003
+
+TEXT FEATURE VALUE-ADD
+
+Table 4: Lift from Adding Text Features
+
+Target          Config A    Config D    Delta F1    Delta AUC
+over_budget     0.334       0.358       +0.025      +0.017
+late            0.879       0.881       +0.002      +0.004
+
+For over_budget, text features provide a +7.5% relative F1 improvement. For 
+late, structured features alone achieve nearly maximum performance; text 
+features add minimal additional value.
+
+
+SMOTE VARIANT COMPARISON
+
+Table 5: Phase 3C - Resampling Method Comparison
+
+Variant         F1      AUC     Optimal Threshold
+SMOTE           0.341   0.777   0.294
+BorderlineSMOTE 0.346   0.778   0.289  (Winner)
+ADASYN          0.344   0.775   0.342
+
+BorderlineSMOTE performs best by concentrating synthetic samples near the 
+decision boundary where the classifier needs the most help.
+
+
+HYPERPARAMETER TUNING RESULTS
+
+Table 6: GridSearchCV Effect (Config D, over_budget)
+
+Model               Default F1    Tuned F1    Lift
+Logistic Regression 0.347         0.350       +0.003
+Random Forest       0.338         0.346       +0.008
+
+Best Logistic Regression Parameters:
+- C: 10.0
+- class_weight: {0: 1, 1: 3}
+- penalty: l2
+- solver: liblinear
+
+Best Random Forest Parameters:
+- class_weight: balanced_subsample
+- max_depth: 20
+- min_samples_leaf: 1
+- n_estimators: 200
+
+GridSearchCV confirms that sklearn's default balanced settings are already 
+near-optimal. The major gains came from Phase 1 (threshold tuning and SMOTE 
+strategy) rather than hyperparameter search.
+
+
+6. DISCUSSION
+
+INTERPRETATION OF RESULTS
+
+The consistent superiority of Config D (combined features) across both targets 
+confirms that structured contract data provides the strongest predictive 
+signal, while text features contribute additional discriminative power 
+especially for the harder over_budget prediction.
+
+The dramatic difference in predictability between targets (late F1 = 0.881 vs 
+over_budget F1 = 0.358) reflects the underlying data distribution. Late 
+delivery is a majority-class problem (61.5% positive) with clearer behavioral 
+patterns, while cost overruns are genuinely rare (10.4%) and inherently more 
+unpredictable due to external factors (market conditions, scope changes, 
+unforeseen technical challenges).
+
+STRENGTHS OF OUR APPROACH
+
+1. Rigorous evaluation: 5-fold stratified CV with variance reporting prevents 
+   overfitting to lucky train/test splits
+2. Honest threshold tuning: F1-optimal thresholds derived from validation data,
+   not test data, avoiding optimistic bias
+3. Systematic feature engineering: Temporal and interaction features capture
+   domain knowledge about government contracting patterns
+4. Controlled scope: Restricted toolkit demonstrates what standard methods 
+   can achieve before reaching for complex alternatives
+5. Reproducibility: All results saved as CSV artifacts with execution times
+
+LIMITATIONS
+
+1. External validation limited: GAO ground truth validation sample (N=121) 
+   meets the >50 threshold but is relatively small
+2. Text coverage gap: LDA topics use only 20.6% of contracts (those with 
+   descriptions >= 100 characters); 80% of contracts see only structured features
+3. Temporal generalization untested: We did not evaluate train-on-old/test-on-new
+   splits to assess performance degradation over time
+4. Binary label coarseness: The over_budget F1 ceiling (~0.36) suggests the
+   binary label may be too coarse; predicting cost_growth_pct as regression
+   might be more informative
+5. Class imbalance fundamental: Even with SMOTE and threshold tuning, the
+   10.4% positive rate for over_budget limits achievable recall-precision tradeoffs
+
+SURPRISING FINDINGS
+
+1. Threshold tuning > hyperparameter tuning: The F1-optimal threshold choice 
+   improved performance more than extensive GridSearchCV tuning, suggesting 
+   that sklearn's balanced defaults are already well-designed
+2. Text features help the hard problem: While structured features dominate for
+   late prediction, text features provide the most relative lift for over_budget
+3. BorderlineSMOTE marginal: Despite literature suggesting significant 
+   advantages, BorderlineSMOTE provided only a 0.005 F1 improvement over vanilla
+   SMOTE for over_budget
+4. Late prediction saturation: Structured features alone achieve F1 = 0.879;
+   adding expensive TF-IDF and LDA processing yields only +0.002 improvement
+
+
+7. CONCLUSION
+
+KEY TAKEAWAYS
+
+1. Combined feature sets (structured + text) consistently outperform single 
+   feature types, though the magnitude of improvement varies by target.
+
+2. Late delivery is fundamentally more predictable than cost overruns due to 
+   higher base rate (61.5% vs 10.4%) and clearer behavioral patterns.
+
+3. For imbalanced classification, threshold tuning provides greater 
+   performance gains than hyperparameter tuning. The default 0.5 probability 
+   cutoff should not be trusted without evaluation.
+
+4. Cross-validation with variance reporting is essential for honest 
+   performance assessment in academic and production settings.
+
+5. Standard sklearn methods with careful feature engineering can achieve 
+   strong performance without resorting to gradient boosting or deep learning.
+
+POSSIBLE NEXT STEPS
+
+1. Temporal evaluation: Test generalization by training on 2015-2022 contracts 
+   and testing on 2023-2024 to assess model degradation over time
+
+2. Regression formulation: Predict continuous cost_growth_pct instead of binary
+   over_budget for finer-grained risk assessment
+
+3. Advanced text processing: Investigate BERT embeddings or domain-specific
+   contract language models for the 20% of contracts with descriptions
+
+4. Cost-sensitive learning: Explicitly incorporate the dollar cost of 
+   misclassification rather than treating false positives and false negatives 
+   as equally costly
+
+5. Production deployment: Wrap the trained model in an API that contract 
+   officers can query during the proposal evaluation phase
+
+
+8. REFERENCES
+
+1. USAspending.gov. Federal Procurement Data System. Available at:
+   https://www.usaspending.gov
+
+2. Chawla, N.V., et al. (2002). SMOTE: Synthetic Minority Over-sampling 
+   Technique. Journal of Artificial Intelligence Research, 16, 321-357.
+
+3. Han, H., et al. (2005). Borderline-SMOTE: A New Over-Sampling Method in 
+   Imbalanced Data Sets Learning. ICIC 2005, 878-887.
+
+4. Pedregosa, F., et al. (2011). Scikit-learn: Machine Learning in Python. 
+   JMLR, 12, 2825-2830.
+
+5. Lemaitre, G., et al. (2017). Imbalanced-learn: A Python Toolbox to Tackle 
+   the Curse of Imbalanced Datasets in Machine Learning. JMLR, 18(17), 1-5.
+
+6. Rehurek, R., & Sojka, P. (2010). Software Framework for Topic Modelling 
+   with Large Corpora. LREC 2010 Workshop on New Challenges for NLP Frameworks.
+
+
+9. APPENDIX
+
+A. REPRODUCIBILITY ARTIFACTS
+
+All metrics in this report are reproducible from saved CSV files:
+
+File                                    Contents                        Rows
+data/processed/results_comparison.csv   Single 80/20 split results      16
+data/processed/cv_results.csv             5-fold stratified CV results    16
+data/processed/tuning_results.csv         Phase 3 parameter sweeps         7
+data/processed/temporal_features.csv      Per-contract temporal feats   ~45,000
+
+B. EXECUTION ENVIRONMENT
+
+- Operating System: Windows 11
+- CPU: 32-thread processor
+- Python: 3.11
+- Key package versions:
+  * scikit-learn: 1.3.x
+  * imbalanced-learn: 0.11.x
+  * pandas: 2.1.x
+  * numpy: 1.24.x
+
+C. NOTEBOOK EXECUTION TIMES
+
+- 06_classification.ipynb: ~3 minutes (full training and evaluation)
+- 08_final_submission.ipynb: ~30 seconds (loads pre-computed results)
+
+D. GENERATED FIGURES
+
+The following visualization files were generated:
+- cv_f1_comparison.png: F1 by configuration with error bars
+- cv_auc_comparison.png: AUC by configuration with error bars
+- phase3_tuning_comparison.png: SMOTE variants and GridSearchCV effects
+- roc_curves_comparison.png: ROC curves for all 16 models
+- feature_importance.png: Top features from Random Forest
+
+END OF REPORT
