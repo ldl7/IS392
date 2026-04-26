@@ -20,13 +20,10 @@ clean = re.sub(r'^[\s\-]+$', '', clean, flags=re.MULTILINE)
 clean = re.sub(r'^---+$', '', clean, flags=re.MULTILINE)
 
 # Remove backticks from code blocks but keep content
-clean = clean.replace('\', '')
+clean = clean.replace('`', '')
 
 # Clean up multiple blank lines
-clean = re.sub(r'
-{3,}', '
-
-', clean)
+clean = re.sub(r'\n{3,}', '\n\n', clean)
 
 # Create PDF
 pdf = FPDF()
@@ -45,8 +42,7 @@ pdf.ln(5)
 pdf.set_font('Arial', '', 10)
 
 # Process and add content
-lines = clean.split('
-')
+lines = clean.split('\n')
 for line in lines:
     line = line.strip()
     if not line:
