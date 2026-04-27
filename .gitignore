@@ -4,6 +4,8 @@ venv/
 
 # Raw data (too large for version control — download from Figshare)
 exploring_data/
+data/
+outputs/
 
 # Generated data outputs (reproduced by running the notebook)
 data/raw/
